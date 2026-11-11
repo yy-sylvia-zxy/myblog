@@ -92,8 +92,78 @@
 
 ---
 
-## Lab06–Lab08 · 待补（数据库配置完成后逐条补记录）
+## Lab06 · 三个 Bug
 
-> 备注：这一段的实验要在数据源接通之后才有意义（POST 写库、直插验证、重启存活、
-> 分页拦截器的 COUNT+LIMIT、Article 全生命周期、advice 的 404）。
-> 每一条实际跑完都会把"请求 / 响应 / SQL 日志"原文贴进 `docs/evidence.md`。
+### Bug 4：改了代码，屏幕上还是旧行为（8080 被旧进程占着）
+
+- 现象：重新 `spring-boot:run` 之后，轮询 `/hello` 第一次就返回 200，
+  但 `/messages` 的行为和上一版一模一样，新加的 Mapper 完全没有出现。
+- 原因：上一周的实例还活着并占着 8080 端口；新进程要么绑定失败、
+  要么根本没抢到端口。我看到的 200 是**旧进程**的回答。
+- 教训：`200` 只证明"有人在这个端口上服务"，不证明"我这次的改动生效了"。
+  验证改动要看**版本特征**（新字段、新字段名、新日志），而不是看状态码；
+  动手前先确认端口上没有遗留进程。
+
+### Bug 5：`mysql -e "source 中文路径/schema.sql"` 打不开文件
+
+- 现象：`ERROR at line 1: Failed to open file '...\schema.sql', error: 2`。
+- 原因：路径里有中文目录 + 反斜杠，mysql 客户端把它当成了自己的相对路径解析。
+- 修法：干脆不 source，直接用 `mysql -e "CREATE TABLE ..."` 把 DDL 写进去。
+- 教训：踩到"工具读不到我的文件"时，先怀疑路径写法，不要怀疑表结构写错。
+
+### Bug 6：异常面前，Spring 默认给出的是 500 和另一套骨架
+
+- 实测（注释掉 `ApiExceptionAdvice` 后）：`GET /articles/999` 返回
+  `500`，body 是 `{"timestamp":...,"status":500,"error":"Internal Server Error","path":"/articles/999"}`，
+  控制台里是 `java.util.NoSuchElementException: article not found` 的完整堆栈。
+- 原因：`NoSuchElementException` 没有对应的 `@ExceptionHandler`，
+  Spring Boot 走了默认错误处理，于是"东西不存在"被当成"服务器坏了"，
+  骨架也从 `code/message/data` 变成 `timestamp/status/error/path`。
+- 修法：`ApiExceptionAdvice` 用 `@RestControllerAdvice` 接住它，
+  `@ResponseStatus(404)` + `Result.fail(404, ...)`；还原后同一请求变成
+  `404 + {"code":404,"data":null,"message":"article not found"}`。
+- 结论：**"错误也是接口契约的一部分"** —— 成功和失败必须长同一个样子。
+  （顺带纠正一个常见说法：Boot 默认错误体在这里是 JSON 不是 HTML，
+  具体形态取决于版本与 `Accept` 头，不能当定理背。）
+
+---
+
+## Lab07 · 一个"不报错的错误"
+
+- 实测（注释掉 `MybatisPlusConfig` 里的 `PaginationInnerInterceptor`）：
+  请求 `GET /messages?page=2&size=1`，返回 **200**，
+  `items` 却是**全部 3 条**，`size=1` 完全没生效，`total` 是 **0**。
+- 同一请求在数据库层只发出了一条 SQL，**没有 COUNT、没有 LIMIT**：
+  `SELECT id,content,created_at FROM message ORDER BY created_at DESC`
+- 还原拦截器后同一请求：`items` 只有 1 条（id=2），`total: 3`，
+  SQL 变成 `SELECT COUNT(*) AS total FROM message` + `... LIMIT ?,?` 两条。
+- 结论：最危险的 bug 是不报错的 bug。判断分页真假，要去日志里
+  **亲眼看见 LIMIT**，不能只看返回条数"看起来变少了"。
+
+---
+
+## Lab07 的坑中坑：改回来了，却没生效
+
+- 现象：第一次做破坏实验时，"还原拦截器后"的响应仍然和破坏时一模一样（`total: 0`）。
+- 原因：用 `Copy-Item` 把 `.bak` 还原回去时，目标文件**沿用了备份的旧时间戳**；
+  Maven 按时间戳判断是否需要重编译，认定源文件没变新 → **跳过编译** →
+  跑的还是旧 class。
+- 修法：还原后把文件时间戳推到当前（或 `mvn clean compile`），强制重编译，
+  第二次验证才拿到真实的"还原后"行为。
+- 结论：破坏实验最怕的不是改坏，而是**改回来了却没生效** —— 那就成了一假的记录。
+  判断依据永远是行为指纹（`total`、`LIMIT`、404 骨架），而不是"我把文件改回去了"这个动作。
+
+
+---
+
+## Lab08 · 实测（含一次真实修错）
+
+- 现象：验收脚本在"删除后再读"这条用例上抛出
+  `Method invocation failed because [HttpResponseMessage] does not contain a method named 'GetResponseStream'`。
+- 原因：PowerShell 7 的 `Invoke-WebRequest` 抛出的异常里，响应体不在
+  `Response.GetResponseStream()`，而在 `$_.ErrorDetails.Message`。
+- 修法：脚本的错误分支改成读 `ErrorDetails.Message`，
+  再跑一次，404 用例的输出就是干净的 JSON 骨架。
+- 结论：连"抓证据的脚本"本身也会写错 —— 所以要能区分
+  "服务端返回错了" 和 "我没有正确读到服务端的返回"。
+
