@@ -49,14 +49,19 @@
   没这个头，它不知道这堆字节是什么格式，只能拒绝。
 - 修法：请求头补上 `Content-Type: application/json`。
 
-### Bug 2：JSON 键名不匹配，却仍然返回 200
+### Bug 2：JSON 键名不匹配 —— 真正的现象是 500，不是 200
 
-- 现象：发 `{"text":"hello"}`，接口返回 `200`，但 `content` 是 `null`
-  （后续 Week07 起会因为 `content` 为空被业务规则拦下）。
-- 原因：Jackson 找不到 `text` 对应的字段，于是**静默忽略**，
-  `MessageRequest.content` 保持 `null`。HTTP 协议层面没有任何错，所以是 200。
-- 结论：`200` 只代表"服务器受理了"，不代表"业务成立"。这就是为什么
-  Service 里要有 `content 不能为空` 的校验 —— 校验是业务在说话，状态码不会说话。
+- 现象（2026-11-11 实测，MySQL 版）：发 `{"text":"hello"}`
+  → `500 Internal Server Error`，响应体是 Spring 默认错误骨架
+  `{"timestamp","status":500,"error":"Internal Server Error","path":"/messages"}`。
+- 原因：Jackson 不认识 `text` 这个键，**静默忽略**，`MessageRequest.content` 保持 `null`；
+  HTTP 层面语法没错，请求确实被受理，但 `null` 一路走到 `INSERT`，
+  撞上 `content VARCHAR(1000) NOT NULL` 约束 → 抛异常 → 500。
+- 修正一处旧记录：Week04 内存版时代记的是"返回 200、content 为 null"，
+  因为内存 List 什么都能装。接上 MySQL 后，同类错误被数据库约束拦下，
+  **存储层的约束把"业务沉默"变成了"显式失败"**。
+- 结论：`200` 只代表"请求被受理"，不代表"业务成立"；判据要看响应体里的数据，
+  以及是否真的落库。校验要写在 Service 里，别指望状态码替你说活。
 
 ### Bug 3：GET 打 POST 端点 405 / 错路径 404
 

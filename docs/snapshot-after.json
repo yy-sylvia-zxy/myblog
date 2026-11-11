@@ -1,0 +1,4 @@
+{
+  "messages": "{\"items\":[{\"id\":5,\"content\":\"自检留言 B（含 MySQL 这个词）\",\"createdAt\":\"2026-11-11T15:42:18\"},{\"id\":2,\"content\":\"第二条留言——这次写进 MySQL，不是内存\",\"createdAt\":\"2026-11-11T12:10:16\"}],\"total\":2,\"page\":1,\"size\":5}",
+  "profile": "{\"blogName\":\"Sylvia 的数字角落\",\"owner\":\"赵熙语 Sylvia（25281E127）\",\"introduction\":\"广东金融学院计算机科学与技术专业学生，正在学习 Web 程序设计，习惯把学到的东西写成代码再讲一遍。\",\"interests\":\"Java、Spring Boot、数据结构与算法、摄影、英语\",\"vision\":\"把 MyBlog 做成一个能与访客对话的数字自我：它记得我说过的话，也能被修订。\"}"
+}
