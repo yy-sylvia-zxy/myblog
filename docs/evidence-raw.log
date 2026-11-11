@@ -1,0 +1,51 @@
+
+=== Lab06-1 POST /messages（第一条） ===
+{"status":201,"body":"{\"id\":1,\"content\":\"赵熙语的博客开张了：第一条来自浏览器的留言\",\"createdAt\":\"2026-11-11T12:10:15.4807284\"}"}
+
+=== Lab06-2 POST /messages（第二条） ===
+{"status":201,"body":"{\"id\":2,\"content\":\"第二条留言——这次写进 MySQL，不是内存\",\"createdAt\":\"2026-11-11T12:10:15.5954036\"}"}
+
+=== Lab06-3 GET /messages（读库） ===
+{"status":200,"body":"{\"items\":[{\"id\":2,\"content\":\"第二条留言——这次写进 MySQL，不是内存\",\"createdAt\":\"2026-11-11T12:10:16\"},{\"id\":1,\"content\":\"赵熙语的博客开张了：第一条来自浏览器的留言\",\"createdAt\":\"2026-11-11T12:10:15\"}],\"total\":2,\"page\":1,\"size\":5}"}
+
+=== Lab07-1 GET /messages?keyword=MySQL ===
+{"status":200,"body":"{\"items\":[{\"id\":2,\"content\":\"第二条留言——这次写进 MySQL，不是内存\",\"createdAt\":\"2026-11-11T12:10:16\"}],\"total\":1,\"page\":1,\"size\":5}"}
+
+=== Lab07-2 GET /messages?keyword=不存在的词 ===
+{"status":200,"body":"{\"items\":[],\"total\":0,\"page\":1,\"size\":5}"}
+
+=== Lab07-3 GET /messages?page=2&size=1 ===
+{"status":200,"body":"{\"items\":[{\"id\":1,\"content\":\"赵熙语的博客开张了：第一条来自浏览器的留言\",\"createdAt\":\"2026-11-11T12:10:15\"}],\"total\":2,\"page\":2,\"size\":1}"}
+
+=== Lab08-1 POST /articles ===
+{"status":200,"body":"{\"code\":0,\"data\":{\"content\":\"这是 MyBlog 的第一篇可修订的文章。\",\"createdAt\":\"2026-11-11T12:10:15.8803646\",\"id\":1,\"title\":\"第一篇文章\"},\"message\":\"ok\"}"}
+
+=== Lab08-2 POST /articles（第二篇，供分页用） ===
+{"status":200,"body":"{\"code\":0,\"data\":{\"content\":\"用于验证发现列表与分页。\",\"createdAt\":\"2026-11-11T12:10:15.9202639\",\"id\":2,\"title\":\"第二篇文章\"},\"message\":\"ok\"}"}
+
+=== Lab08-3 GET /articles ===
+{"status":200,"body":"{\"code\":0,\"data\":{\"items\":[{\"content\":\"这是 MyBlog 的第一篇可修订的文章。\",\"createdAt\":\"2026-11-11T12:10:16\",\"id\":1,\"title\":\"第一篇文章\"},{\"content\":\"用于验证发现列表与分页。\",\"createdAt\":\"2026-11-11T12:10:16\",\"id\":2,\"title\":\"第二篇文章\"}],\"total\":2,\"page\":1,\"size\":5},\"message\":\"ok\"}"}
+
+=== Lab08-4 GET /articles?keyword=修订 ===
+{"status":200,"body":"{\"code\":0,\"data\":{\"items\":[{\"content\":\"这是 MyBlog 的第一篇可修订的文章。\",\"createdAt\":\"2026-11-11T12:10:16\",\"id\":1,\"title\":\"第一篇文章\"}],\"total\":1,\"page\":1,\"size\":5},\"message\":\"ok\"}"}
+
+=== Lab08-5 GET /articles/1 ===
+{"status":200,"body":"{\"code\":0,\"data\":{\"content\":\"这是 MyBlog 的第一篇可修订的文章。\",\"createdAt\":\"2026-11-11T12:10:16\",\"id\":1,\"title\":\"第一篇文章\"},\"message\":\"ok\"}"}
+
+=== Lab08-6 PUT /articles/1（改标题） ===
+{"status":200,"body":"{\"code\":0,\"data\":{\"content\":\"这是 MyBlog 的第一篇可修订的文章。\",\"createdAt\":\"2026-11-11T12:10:16\",\"id\":1,\"title\":\"第一篇文章（已修订）\"},\"message\":\"ok\"}"}
+
+=== Lab08-7 GET /articles/1（确认修订生效） ===
+{"status":200,"body":"{\"code\":0,\"data\":{\"content\":\"这是 MyBlog 的第一篇可修订的文章。\",\"createdAt\":\"2026-11-11T12:10:16\",\"id\":1,\"title\":\"第一篇文章（已修订）\"},\"message\":\"ok\"}"}
+
+=== Lab08-8 DELETE /articles/2 ===
+{"status":200,"body":"{\"code\":0,\"data\":null,\"message\":\"ok\"}"}
+
+=== Lab08-9 GET /articles/2（删除后再读） ===
+{"status":404,"body":"\r\n{\r\n  \"code\": 404,\r\n  \"data\": null,\r\n  \"message\": \"article not found\"\r\n}"}
+
+=== Lab08-10 GET /articles/999（从未存在） ===
+{"status":404,"body":"\r\n{\r\n  \"code\": 404,\r\n  \"data\": null,\r\n  \"message\": \"article not found\"\r\n}"}
+
+=== Lab08-11 GET /messages（旧接口是否分毫未动） ===
+{"status":200,"body":"{\"items\":[{\"id\":2,\"content\":\"第二条留言——这次写进 MySQL，不是内存\",\"createdAt\":\"2026-11-11T12:10:16\"},{\"id\":1,\"content\":\"赵熙语的博客开张了：第一条来自浏览器的留言\",\"createdAt\":\"2026-11-11T12:10:15\"}],\"total\":2,\"page\":1,\"size\":5}"}

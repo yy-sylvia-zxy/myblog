@@ -1,0 +1,44 @@
+
+########## 实验 A：注释掉 PaginationInnerInterceptor ##########
+
+=== A-1 GET /messages?page=2&size=1 ===
+status=200 | Content-Type=application/json
+{"items":[{"id":3,"content":"这条是从 Navicat/命令行直接插进数据库的，应用并没有经手","createdAt":"2026-11-11T12:10:24"},{"id":2,"content":"第二条留言——这次写进 MySQL，不是内存","createdAt":"2026-11-11T12:10:16"},{"id":1,"content":"赵熙语的博客开张了：第一条来自浏览器的留言","createdAt":"2026-11-11T12:10:15"}],"total":0,"page":2,"size":1}
+--- 这段实例日志里的 SQL ---
+
+
+########## 恢复拦截器 ##########
+
+=== B-1 GET /messages?page=2&size=1 ===
+status=200 | Content-Type=application/json
+{"items":[{"id":3,"content":"这条是从 Navicat/命令行直接插进数据库的，应用并没有经手","createdAt":"2026-11-11T12:10:24"},{"id":2,"content":"第二条留言——这次写进 MySQL，不是内存","createdAt":"2026-11-11T12:10:16"},{"id":1,"content":"赵熙语的博客开张了：第一条来自浏览器的留言","createdAt":"2026-11-11T12:10:15"}],"total":0,"page":2,"size":1}
+--- 这段实例日志里的 SQL ---
+
+
+########## 实验 C：注释掉 @RestControllerAdvice ##########
+
+=== C-1 GET /articles/999 ===
+status=500 | Content-Type=application/json
+
+{
+  "timestamp": "2026-11-11T04:57:26.580Z",
+  "status": 500,
+  "error": "Internal Server Error",
+  "path": "/articles/999"
+}
+--- 这段实例日志里的异常 ---
+2026-11-11T12:57:26.572+08:00 ERROR 40516 --- [myblog] [nio-8080-exec-3] o.a.c.c.C.[.[.[/].[dispatcherServlet]    : Servlet.service() for servlet [dispatcherServlet] in context with path [] threw exception [Request processing failed: java.util.NoSuchElementException: article not found] with root cause
+java.util.NoSuchElementException: article not found
+	at org.apache.catalina.valves.ErrorReportValve.invoke(ErrorReportValve.java:86) ~[tomcat-embed-core-11.0.24.jar:11.0.24]
+
+########## 恢复 advice ##########
+
+=== D-1 GET /articles/999 ===
+status=500 | Content-Type=application/json
+
+{
+  "timestamp": "2026-11-11T04:57:37.255Z",
+  "status": 500,
+  "error": "Internal Server Error",
+  "path": "/articles/999"
+}
