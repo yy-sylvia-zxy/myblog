@@ -1,7 +1,6 @@
 package com.myblog.repository;
 
 import com.myblog.model.Message;
-import org.springframework.stereotype.Repository;
 
 import java.time.LocalDateTime;
 import java.util.ArrayList;
@@ -9,16 +8,17 @@ import java.util.List;
 import java.util.Optional;
 
 /**
- * Lab05 · 内存版实现。
+ * Lab05 · 内存版实现（Lab06 起停用）。
  *
  * 数据住在这个 JVM 进程的堆里，所以：
  *   进程活着 → 留言在
- *   进程重启 → 留言全部消失（这是本周的"签名缺陷"，Week06 换成 MySQL 后消失）
+ *   进程重启 → 留言全部消失（这是 Week05 留下的"签名缺陷"）
  *
- * @Repository 让 Spring 启动时把这个类实例化，并登记为 MessageRepository 的实现，
- * 之后谁在构造器里要一个 MessageRepository，它就把这个对象递过去（依赖注入）。
+ * Lab06 起改用 DbMessageRepository，这里的 @Repository 被注释掉：
+ * 一个接口只能有一个实现被登记，否则 Spring 不知道递哪个给你
+ * （NoUniqueBeanDefinitionException）。类保留着，作为 Week05 的历史证据。
  */
-@Repository
+// @Repository   ← Week06 起停用：避免与 DbMessageRepository 冲突
 public class InMemoryMessageRepository implements MessageRepository {
 
     // final 锁住的是"引用"不是"内容"：可以往里 add，但不能把 messages 指向另一个 List

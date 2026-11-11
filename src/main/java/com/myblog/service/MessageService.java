@@ -1,55 +1,63 @@
 package com.myblog.service;
 
+import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
+import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
+import com.myblog.mapper.MessageMapper;
 import com.myblog.model.Message;
-import com.myblog.model.MessageRequest;
-import com.myblog.repository.MessageRepository;
 import org.springframework.stereotype.Service;
 
-import java.util.List;
+import java.time.LocalDateTime;
 import java.util.Optional;
 
 /**
- * Lab05 · MyBlog 的"大脑"。
+ * Lab07 · 留言业务员（方案 A：直接依赖 MessageMapper）。
  *
- * 两件事：
- *   1. 做业务决定（校验内容不能为空、把 Request 翻译成 Message）
- *   2. 把存储交给 Repository 边界
+ * Week05 的 Repository 接口在 Week06 完成了"从内存搬到 MySQL"的使命；
+ * 本周按课程给的方案 A，Service 直接与 Mapper 对话：
+ * 过滤条件、切片、计数全部交给 MySQL 与分页拦截器。
  *
- * 它不懂 HTTP（这里没有任何 @RequestBody 之类的注解），
- * 也不懂数据住在哪（List？MySQL？它不关心）。
- *
- * @Service 的意义：让容器在启动时把它创建出来，并把构造器要的
- * MessageRepository 递进来 —— 这叫作"依赖在启动时接线"。
- * 一旦这根系错了（比如忘了给实现类加 @Repository），
- * 应用会在启动阶段直接失败，而不是等到第一次请求才出问题。
+ * 它依然不懂 HTTP，也依然是我们唯一做"业务决定"的地方。
  */
 @Service
 public class MessageService {
 
-    private final MessageRepository messageRepository;
+    private final MessageMapper messageMapper;   // 唯一的依赖
 
-    // 构造器注入 + final：依赖在创建时一次性接好，之后不许改
-    public MessageService(MessageRepository messageRepository) {
-        this.messageRepository = messageRepository;
+    public MessageService(MessageMapper messageMapper) {
+        this.messageMapper = messageMapper;
     }
 
-    /** 收下访客的申请表，产出一条真正的留言。 */
-    public Message create(MessageRequest request) {
-        if (request.content == null || request.content.isBlank()) {
-            throw new IllegalArgumentException("content must not be empty");
+    /** 创建留言（POST /messages），id 由 MySQL 自增并回填。 */
+    public Message create(Message message) {
+        if (message.getContent() == null || message.getContent().isBlank()) {
+            throw new IllegalArgumentException("content 不能为空");
         }
-        Message message = new Message();
-        message.setContent(request.content);
-        // id 和 createdAt 由仓库授予，不由访客决定
-        return messageRepository.save(message);
+        if (message.getCreatedAt() == null) {
+            message.setCreatedAt(LocalDateTime.now());
+        }
+        messageMapper.insert(message);
+        return message;
     }
 
-    public List<Message> list() {
-        return messageRepository.findAll();
+    /** 查询单条；查不到返回空盒子，由 Controller 决定怎么说。 */
+    public Optional<Message> getById(Long id) {
+        return Optional.ofNullable(messageMapper.selectById(id));
     }
 
-    /** 诚实的返回类型：这条留言可能存在，也可能不存在。 */
-    public Optional<Message> findById(Long id) {
-        return messageRepository.findById(id);
+    /**
+     * 搜索 + 分页（GET /messages?keyword=&page=&size=）。
+     *
+     * 条件按需累积：keyword 有值 → 追加 LIKE；
+     * 始终按创建时间倒序（新的在前）。
+     * 注意这里不"先查全部再在 Java 里筛" —— 那是 Week04 的做法；
+     * 现在过滤、切片、计数都发生在 MySQL 里。
+     */
+    public Page<Message> search(String keyword, long page, long size) {
+        LambdaQueryWrapper<Message> qw = new LambdaQueryWrapper<>();
+        if (keyword != null && !keyword.isBlank()) {
+            qw.like(Message::getContent, keyword);
+        }
+        qw.orderByDesc(Message::getCreatedAt);
+        return messageMapper.selectPage(new Page<>(page, size), qw);
     }
 }
