@@ -145,3 +145,43 @@ c.m.m.MessageMapper.selectList        : ==>  Preparing: SELECT id,content,create
 - `.gitignore` 排除 `target/`、`*.log`、`.idea/` 与 `application.properties`
 - 仓库里只有 `application.properties.example`（密码占位符），
   `git log -S '密码'` 检查历史为空，**密码没有进过任何提交**
+
+---
+
+## 全量自检（2026-11-11 15:42）
+
+从零 mvn clean package：BUILD SUCCESS，单元测试 `contextLoads` 通过，
+产出 `myblog-0.0.1-SNAPSHOT.jar`；用 `java -jar` 启动后逐条打接口：
+
+| # | 周次 | 接口 | 期望 | 实测 |
+|---|---|---|---|---|
+| 1 | Lab01 | GET /hello | 200 | 200 text/plain |
+| 2 | Lab02 | GET /me | 200 | 200 JSON |
+| 3 | Lab02 | GET /profile | 200 | 200 JSON |
+| 4 | Lab03 | GET /profile 五字段 | 200 | 200 |
+| 5-6 | Lab04 | POST /messages 两条 | 201 | 201，id 递增 |
+| 7 | Lab04 | GET /messages | 200 | 200 |
+| 8 | Lab04 | GET /messages/1 | 200 | 200 |
+| 9 | Lab04 | GET /messages/999999 | 404 | 404 |
+| 10 | Lab07 | keyword=MySQL | 200 | 200，命中 2 条 |
+| 11 | Lab07 | keyword=不存在 | 200 | 200，items 空 |
+| 12 | Lab07 | page=2&size=1 | 200 | 200，1 条 / total 5 |
+| 13 | Lab08 | POST /articles | 200 | 200 code=0 |
+| 14 | Lab08 | GET /articles | 200 | 200 |
+| 15 | Lab08 | GET /articles/999999 | 404 | 404 统一骨架 |
+| 16 | Lab08 | PUT /articles/1 | 200 | 200 |
+| 17 | Lab08 | DELETE /articles/1 | 200 | 200 |
+| 18 | Lab08 | GET /articles/1（删除后） | 404 | 404 统一骨架 |
+| 19 | — | GET /article（错误路径） | 404 | 404 |
+
+**19 项全部通过。**
+
+### 一处已知不一致（如实记录）
+
+`/articles/{id}` 的 404 走的是我们自己的 `Result` 骨架
+（`{"code":404,"data":null,"message":"article not found"}`）；
+而 `/messages/{id}` 不存在时，抛的是 `ResponseStatusException`，
+体是 Spring 默认的 `{"timestamp","status","error","path"}`。
+两者状态码都是 404，但骨架不同 —— 因为 Lab08 要求"旧资源分毫未动"，
+所以没有去改 `MessageController`。若要全站统一，把它的异常换成
+`NoSuchElementException` 并在 advice 里加一条处理即可（会改变 /messages 的 404 体形状）。
