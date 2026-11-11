@@ -1,0 +1,28 @@
+
+########## 破坏实验A：@RestController -> @Controller（编译已修正）##########
+改后注解：@Controller
+启动结果：
+2026-11-11T16:10:00.532+08:00  INFO 20024 --- [myblog] [           main] com.myblog.MyblogApplication             : Started MyblogApplication in 2.806 seconds (process running for 3.316)
+GET /hello -> Response status code does not indicate success: 404 (). | body=
+{
+  "timestamp": "2026-11-11T08:11:16.155Z",
+  "status": 404,
+  "error": "Not Found",
+  "path": "/hello"
+}
+还原后 GET /hello -> Hello, I am Sylvia. I Exist.
+
+########## 破坏实验E：注释掉 MessageService 的 @Service ##########
+改后：// [破坏实验] @Service
+APPLICATION FAILED TO START
+Parameter 0 of constructor in com.myblog.controller.MessageController required a bean of type 'com.myblog.service.MessageService' that could not be found.
+Description:
+Parameter 0 of constructor in com.myblog.controller.MessageController required a bean of type 'com.myblog.service.MessageService' that could not be found.
+Action:
+还原后 GET /messages -> HTTP 200
+
+########## git status（工作区不应有源码改动）##########
+?? docs/confirm-table.md
+?? docs/snapshot-after.json
+?? scripts/confirm-table-check.ps1
+?? scripts/confirm-table-check2.ps1

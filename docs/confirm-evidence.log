@@ -1,0 +1,66 @@
+
+########## 阶段1：现状取证 ##########
+
+=== Lab01① 根路径 /（应 404：服务活着、尚无路由） ===
+HTTP 404 | CT=application/json
+ {   "timestamp": "2026-11-11T07:46:54.838Z",   "status": 404,   "error": "Not Found",   "path": "/" }
+
+=== Lab01② GET /hello ===
+HTTP 200 | CT=text/plain; charset=UTF-8
+Hello, I am Sylvia. I Exist.
+
+=== Lab01③ GET /me ===
+HTTP 200 | CT=application/json
+{"name":"赵熙语（Sylvia）","studentId":"25281E127","major":"计算机科学与技术","message":"This is the beginning of my blog."}
+
+=== Lab03① GET /profile ===
+HTTP 200 | CT=application/json
+{"blogName":"Sylvia 的数字角落","owner":"赵熙语 Sylvia（25281E127）","introduction":"广东金融学院计算机科学与技术专业学生，正在学习 Web 程序设计，习惯把学到的东西写成代码再讲一遍。","interests":"Java、Spring Boot、数据结构与算法、摄影、英语","vision":"把 MyBlog 做成一个能与访客对话的数字自我：它记得我说过的话，也能被修订。"}
+
+--- Lab07③ 八项测试矩阵 ---
+M1 HTTP 200  {"items":[{"id":4,"content":"自检留言 A","createdAt":"2026-11-11T15:42:18"},{"id":5,"content":"自检留言 B（含 MySQL 这个词）","createdAt":"2026-11-11T15:42:18"},{"id":3,"content":"这条是从 Navicat/命令行直接插进数据库的，应用并没有经手","createdAt":"2026-11-11T12:10:24"},{"id"…
+M2 HTTP 200  {"items":[{"id":3,"content":"这条是从 Navicat/命令行直接插进数据库的，应用并没有经手","createdAt":"2026-11-11T12:10:24"},{"id":2,"content":"第二条留言——这次写进 MySQL，不是内存","createdAt":"2026-11-11T12:10:16"}],"total":5,"page":2,"size":2}
+M3 HTTP 200  {"items":[{"id":5,"content":"自检留言 B（含 MySQL 这个词）","createdAt":"2026-11-11T15:42:18"},{"id":2,"content":"第二条留言——这次写进 MySQL，不是内存","createdAt":"2026-11-11T12:10:16"}],"total":2,"page":1,"size":5}
+M4 HTTP 200  {"items":[{"id":2,"content":"第二条留言——这次写进 MySQL，不是内存","createdAt":"2026-11-11T12:10:16"}],"total":2,"page":2,"size":1}
+M5 HTTP 200  {"items":[],"total":0,"page":1,"size":5}
+M6 HTTP 200  {"items":[{"id":4,"content":"自检留言 A","createdAt":"2026-11-11T15:42:18"},{"id":5,"content":"自检留言 B（含 MySQL 这个词）","createdAt":"2026-11-11T15:42:18"},{"id":3,"content":"这条是从 Navicat/命令行直接插进数据库的，应用并没有经手","createdAt":"2026-11-11T12:10:24"},{"id"…
+M7 HTTP 200  {"id":1,"content":"赵熙语的博客开张了：第一条来自浏览器的留言","createdAt":"2026-11-11T12:10:15"}
+M8 HTTP 201  {"id":6,"content":"确认表取证：这一条来自 11 月 11 日自检","createdAt":"2026-11-11T15:46:55.8572491"}
+
+--- Lab08③ 收工后
+已写入 docs\snapshot-after.json
+
+########## Lab02破坏实验A：@RestController 换成 @Controller ##########
+改后注解行：@Controller`npublic class HelloController {
+
+=== A-1 GET /profile（@Controller 下） ===
+HTTP  | CT=
+由于目标计算机积极拒绝，无法连接。
+该实例日志尾部：Maven with the -e switch. / [ERROR] Re-run Maven using the -X switch to enable full debug logging. / [ERROR]  / [ERROR] For more information about the errors and possible solutions, please read the following articles: / [ERROR] [Help 1] http://cwiki.apache.org/confluence/display/MAVEN/MojoFailureException
+
+=== A-2 GET /profile（还原 @RestController 后） ===
+HTTP 200 | CT=application/json
+{"blogName":"Sylvia 的数字角落","owner":"赵熙语 Sylvia（25281E127）","introduction":"广东金融学院计算机科学与技术专业学生，正在学习 Web 程序设计，习惯把学到的东西写成代码再讲一遍。","interests":"Java、Spring Boot、数据结构与算法、摄影、英语","vision":"把 MyBlog 做成一个能与访客对话的数字自我：它记得我说过的话，也能被修订。"}
+
+########## Lab02破坏实验B：字段 owner 改名为 author ##########
+
+=== B-1 GET /profile（字段改名后，看 JSON key） ===
+HTTP 200 | CT=application/json
+{"blogName":"Sylvia 的数字角落","author":"赵熙语 Sylvia（25281E127）","introduction":"广东金融学院计算机科学与技术专业学生，正在学习 Web 程序设计，习惯把学到的东西写成代码再讲一遍。","interests":"Java、Spring Boot、数据结构与算法、摄影、英语","vision":"把 MyBlog 做成一个能与访客对话的数字自我：它记得我说过的话，也能被修订。"}
+
+=== B-2 GET /profile（还原后） ===
+HTTP 200 | CT=application/json
+{"blogName":"Sylvia 的数字角落","owner":"赵熙语 Sylvia（25281E127）","introduction":"广东金融学院计算机科学与技术专业学生，正在学习 Web 程序设计，习惯把学到的东西写成代码再讲一遍。","interests":"Java、Spring Boot、数据结构与算法、摄影、英语","vision":"把 MyBlog 做成一个能与访客对话的数字自我：它记得我说过的话，也能被修订。"}
+
+########## Lab05破坏实验：注释掉 @Service ##########
+启动输出（找 bean / required a bean of type）：
+2026-11-11T15:53:05.321+08:00  INFO 26248 --- [myblog] [           main] com.myblog.MyblogApplication             : Started MyblogApplication in 2.341 seconds (process running for 2.784)
+
+=== E-1 GET /messages（还原 @Service 后） ===
+HTTP 200 | CT=application/json
+{"items":[{"id":6,"content":"确认表取证：这一条来自 11 月 11 日自检","createdAt":"2026-11-11T15:46:56"},{"id":4,"content":"自检留言 A","createdAt":"2026-11-11T15:42:18"},{"id":5,"content":"自检留言 B（含 MySQL 这个词）","createdAt":"2026-11-11T15:42:18"},{"id":3,"content":"这条是从 Navicat/命令行直接插进数据库的，应用并没有经手","createdAt":"2026-11-11T12:10:24"},{"id":…
+
+########## 收尾：工作区应无改动 ##########
+?? docs/confirm-table.md
+?? docs/snapshot-after.json
+?? scripts/confirm-table-check.ps1
